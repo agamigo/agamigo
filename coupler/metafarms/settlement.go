@@ -36,17 +36,22 @@ type Killsheet struct {
 	carcassYieldAvg  float64
 	percentLeanAvg   float64
 	sortAdj          float64
+	sortAdjAvg       float64
 	leanAdj          float64
+	leanAdjAvg       float64
+	leanPctAvg       float64
 	backfatAvg       float64
 	loinDepthAvg     float64
 	uniformLeanStats map[string]float64
 	carcassBasePrice float64
 	carcassValueCWT  float64
 	carcassValue     float64
-	liveValueAvg     float64
+	liveValueAdjCWT  float64
 	grossAmount      float64
 	expenses         map[string]float64
 	netAmount        float64
+	checkNumber      int
+	checkDate        time.Time
 	weightGroups     []*weightGroup
 }
 
@@ -68,7 +73,10 @@ func NewKillsheetsFromCSV(r io.Reader) (kss []*Killsheet, err error) {
 	}
 
 	cr.FieldsPerRecord = -1
-	ks := &Killsheet{}
+	ks := &Killsheet{
+		uniformLeanStats: map[string]float64{},
+		expenses:         map[string]float64{},
+	}
 
 	for {
 		line, err := cr.Read()
@@ -208,8 +216,7 @@ func (ks *Killsheet) parseLine(l []string) (done bool, err error) {
 		ks.weightGroups = append(ks.weightGroups, wg)
 		return false, err
 	case "TOTAL01":
-		// TODO: l[1] redundant head count, maybe error check the sheet
-		// with it
+		// TODO: l[1] redundant head count, maybe use for sanity check
 		ks.carcassWeight, err = strconv.ParseFloat(l[2], 64)
 		if err != nil {
 			return false, fmt.Errorf("Unable to parse Carcass Weight: %v", err)
@@ -234,44 +241,124 @@ func (ks *Killsheet) parseLine(l []string) (done bool, err error) {
 
 		return false, nil
 	case "TOTAL02":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
-		}
+		// TODO: Use as sanity check against weight groups
+		// TOTAL0{2,3,4,5} are Pct Lean groups. Redundant.
 		return false, nil
 	case "TOTAL03":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
-		}
+		// TOTAL0{2,3,4,5} are Pct Lean groups. Redundant.
 		return false, nil
 	case "TOTAL04":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
-		}
+		// TOTAL0{2,3,4,5} are Pct Lean groups. Redundant.
 		return false, nil
 	case "TOTAL05":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
-		}
+		// TOTAL0{2,3,4,5} are Pct Lean groups. Redundant.
 		return false, nil
 	case "TOTAL06":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
+		ks.uniformLeanStats["ffli"], err = strconv.ParseFloat(l[1], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Uniform Lean FFLI: %v", err)
 		}
+
+		ks.uniformLeanStats["bf"], err = strconv.ParseFloat(l[2], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Uniform Lean BF: %v", err)
+		}
+
+		ks.uniformLeanStats["hcw"], err = strconv.ParseFloat(l[3], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Uniform Lean HCW: %v", err)
+		}
+
 		return false, nil
 	case "FINAL01":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
+		// TODO: l[1] redundant carcass weight, maybe use for sanity check
+		// TODO: l[2] redundant carcass value, maybe use for sanity check
+		// TODO: l[3] redundant base price, maybe use for sanity check
+		ks.sortAdjAvg, err = strconv.ParseFloat(l[4], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Sort Adjust Avg: %v", err)
+		}
+
+		ks.leanAdjAvg, err = strconv.ParseFloat(l[5], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Lean Adjust Avg: %v", err)
+		}
+
+		ks.carcassValueCWT, err = strconv.ParseFloat(l[6], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Carcass Value CWT: %v", err)
+		}
+
+		ks.leanPctAvg, err = strconv.ParseFloat(l[7], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Lean Percent Avg: %v", err)
 		}
 		return false, nil
 	case "FINAL02":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
+		ks.backfatAvg, err = strconv.ParseFloat(l[1], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Back Fat Avg: %v", err)
 		}
+
+		ks.loinDepthAvg, err = strconv.ParseFloat(l[2], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Loin Depth Avg: %v", err)
+		}
+
+		ks.liveWeightAvg, err = strconv.ParseFloat(l[3], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Live Weight Avg: %v", err)
+		}
+
+		ks.carcassWeightAvg, err = strconv.ParseFloat(l[4], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Carcass Weight Avg: %v", err)
+		}
+
+		ks.liveWeightAdj, err = strconv.ParseFloat(l[5], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Live Weight Adjusted: %v", err)
+		}
+
+		ks.carcassYieldAvg, err = strconv.ParseFloat(l[6], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Shift: %v", err)
+		}
+
+		ks.liveValueAdjCWT, err = strconv.ParseFloat(l[7], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Shift: %v", err)
+		}
+
 		return false, nil
 	case "FINAL03":
-		for i := 0; i < len(l); i++ {
-			fmt.Printf("CSV %s line, col[%d]: %s\n", s, i, l[i])
+		ks.grossAmount, err = strconv.ParseFloat(l[1], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Gross Value: %v", err)
 		}
+
+		ks.expenses["pork_board"], err = strconv.ParseFloat(l[2], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Pork Board Expense: %v", err)
+		}
+
+		// TODO: l[3,4,5,6] contain unknown expenses/fees
+
+		ks.netAmount, err = strconv.ParseFloat(l[7], 64)
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Net Value: %v", err)
+		}
+
+		ks.checkNumber, err = strconv.Atoi(l[8])
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Check Number: %v", err)
+		}
+
+		ks.checkDate, err = time.Parse("01/02/06", l[9])
+		if err != nil {
+			return false, fmt.Errorf("Unable to parse Check Date: %v", err)
+		}
+
 		return true, nil
 	}
 
