@@ -23,7 +23,7 @@ they fit into our workflow.
 
 We currently use Milestones for:
 - Release Tracking
-  - Put issues that must be addressed for the next release version under the
+	- Put issues that must be addressed for the next release version under the
       "vX.X.X" Milestone.
 
 You can find the current Milestones here:
