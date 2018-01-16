@@ -24,7 +24,7 @@ they fit into our workflow.
 We currently use Milestones for:
 - Release Tracking
   - Put issues that must be addressed for the next release version under the
-      "vx.x.x" Milestone.
+      "vX.X.X" Milestone.
 
 You can find the current Milestones here:
 https://gitlab.com/groups/agamigo/-/milestones
@@ -83,18 +83,18 @@ Dive in: ~"Scope::UX"
 
 ## Project File Structure
 
-- agamigo[/Design] See: [Scope::UX]
-- agamigo[/Specification] See: [Scope::Specification]
-- agamigo[/pkg] Go packages
+- agamigo/[Design](/Design) See: [Scope::UX](#Scope::UX)
+- agamigo/[Specification](/Specification) See: [Scope::Specification](#Scope::Specification)
+- agamigo/[pkg](/pkg) Go packages
 
 Please refer to the Buffalo
 [documentation](https://gobuffalo.io/docs/directory-structure) for the following
 directories.
 
-- agamigo[/actions]
-- agamigo[/assets]
-- agamigo[/grifts]
-- agamigo[/locales]
-- agamigo[/models]
-- agamigo[/templates]
-- agamigo[/test]
+- agamigo/[actions](/actions)
+- agamigo/[assets](/assets)
+- agamigo/[grifts](/grifts)
+- agamigo/[locales](/locales)
+- agamigo/[models](/models)
+- agamigo/[templates](/templates)
+- agamigo/[test](/test)
